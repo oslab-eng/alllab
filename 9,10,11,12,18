@@ -1,0 +1,630 @@
+9)   Write a program to compute the finish time, turnaround time and waiting time for the First come First serve
+
+#include <stdio.h>
+
+struct Process {
+    int id;             // Process ID
+    int arrivalTime;    // Arrival time of the process
+    int burstTime;      // Burst time (execution time) required by the process
+    int finishTime;     // Finish time
+    int turnaroundTime; // Turnaround time
+    int waitingTime;    // Waiting time
+};
+
+void calculateTimes(struct Process p[], int n) {
+    int currentTime = 0;
+
+    for (int i = 0; i < n; i++) {
+        // If the process arrives after the current time, fast-forward time to its arrival
+        if (currentTime < p[i].arrivalTime) {
+            currentTime = p[i].arrivalTime;
+        }
+        
+        // Calculate finish time for the process
+        p[i].finishTime = currentTime + p[i].burstTime;
+        
+        // Calculate turnaround time and waiting time
+        p[i].turnaroundTime = p[i].finishTime - p[i].arrivalTime;
+        p[i].waitingTime = p[i].turnaroundTime - p[i].burstTime;
+        
+        // Update current time to the finish time of the current process
+        currentTime = p[i].finishTime;
+    }
+}
+
+void displayProcessInfo(struct Process p[], int n) {
+    printf("ID\tArrival\tBurst\tFinish\tTurnaround\tWaiting\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\t\t%d\n",
+               p[i].id, p[i].arrivalTime, p[i].burstTime,
+               p[i].finishTime, p[i].turnaroundTime, p[i].waitingTime);
+    }
+}
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+
+    // Input arrival time and burst time for each process
+    for (int i = 0; i < n; i++) {
+        p[i].id = i + 1;
+        printf("Enter arrival time and burst time for process %d: ", p[i].id);
+        scanf("%d %d", &p[i].arrivalTime, &p[i].burstTime);
+    }
+
+    // Calculate times using FCFS scheduling
+    calculateTimes(p, n);
+
+    // Display process information with calculated times
+    printf("\nProcess information:\n");
+    displayProcessInfo(p, n);
+
+    return 0;
+}
+
+10) Write a program to compute the finish time, turnaround time and waiting time for the
+ Shortest Job First (Preemptive and Non Preemptive)
+
+#include <stdio.h>
+
+struct Process {
+    int id;
+    int arrivalTime;
+    int burstTime;
+    int finishTime;
+    int turnaroundTime;
+    int waitingTime;
+    int completed;
+};
+
+void calculateTimes(struct Process p[], int n) {
+    int currentTime = 0, completedProcesses = 0;
+
+    while (completedProcesses < n) {
+        int shortest = -1;
+        int minBurst = 1e9;
+
+        // Find process with shortest burst time among available processes
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].arrivalTime <= currentTime && p[i].burstTime < minBurst) {
+                minBurst = p[i].burstTime;
+                shortest = i;
+            }
+        }
+
+        // If no process is available, advance time
+        if (shortest == -1) {
+            currentTime++;
+            continue;
+        }
+
+        // Process the selected process
+        p[shortest].finishTime = currentTime + p[shortest].burstTime;
+        p[shortest].turnaroundTime = p[shortest].finishTime - p[shortest].arrivalTime;
+        p[shortest].waitingTime = p[shortest].turnaroundTime - p[shortest].burstTime;
+        
+        // Mark as completed and update currentTime
+        p[shortest].completed = 1;
+        completedProcesses++;
+        currentTime = p[shortest].finishTime;
+    }
+}
+
+void displayProcessInfo(struct Process p[], int n) {
+    printf("ID\tArrival\tBurst\tFinish\tTurnaround\tWaiting\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\t\t%d\n", 
+               p[i].id, p[i].arrivalTime, p[i].burstTime, 
+               p[i].finishTime, p[i].turnaroundTime, p[i].waitingTime);
+    }
+}
+
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+    for (int i = 0; i < n; i++) {
+        p[i].id = i + 1;
+        printf("Enter arrival time and burst time for process %d: ", p[i].id);
+        scanf("%d %d", &p[i].arrivalTime, &p[i].burstTime);
+        p[i].completed = 0;
+    }
+
+    // Calculate times using Non-Preemptive SJF scheduling
+    calculateTimes(p, n);
+
+    // Display process information with calculated times
+    printf("\nProcess information:\n");
+    displayProcessInfo(p, n);
+
+    return 0;
+}
+
+11)  priority scheduling(premtive and non-premtive)
+
+#include <stdio.h>
+#include <limits.h>
+
+#define MAX_PROCESSES 100
+
+typedef struct {
+    int pid;
+    int arrival_time;
+    int burst_time;
+    int priority;
+    int remaining_time;
+    int finish_time;
+    int turnaround_time;
+    int waiting_time;
+} Process;
+
+
+
+void preemptive_priority_scheduling(Process processes[], int n) {
+
+    int completed = 0, currentTime = 0, min_priority_index;
+    int is_completed[MAX_PROCESSES] = {0};
+
+    while (completed != n) {
+        min_priority_index = -1;
+        int min_priority = INT_MAX;
+
+        // Select the process with the highest priority that has arrived
+        for (int i = 0; i < n; i++) {
+            if (processes[i].arrival_time <= currentTime && !is_completed[i] && processes[i].priority < min_priority) {
+                
+                min_priority = processes[i].priority;
+                min_priority_index = i;
+            }
+        }
+
+        if (min_priority_index == -1) {
+            currentTime++;
+            continue;
+        }
+
+        // Process selected for execution
+        processes[min_priority_index].remaining_time--;
+        currentTime++;
+
+        // Check if process is complete
+        if (processes[min_priority_index].remaining_time == 0) {
+            processes[min_priority_index].finish_time = currentTime;
+            processes[min_priority_index].turnaround_time = currentTime - processes[min_priority_index].arrival_time;
+            processes[min_priority_index].waiting_time = processes[min_priority_index].turnaround_time - processes[min_priority_index].burst_time;
+
+            is_completed[min_priority_index] = 1;
+            completed++;
+        }
+    }
+}
+
+
+
+void non_preemptive_priority_scheduling(Process processes[], int n) {
+
+    int completed = 0, currentTime = 0, min_priority_index;
+    int is_completed[MAX_PROCESSES] = {0};
+
+    while (completed != n) {
+        min_priority_index = -1;
+        int min_priority = INT_MAX;
+
+        // Select the process with the highest priority that has arrived
+        for (int i = 0; i < n; i++) {
+            if (processes[i].arrival_time <= currentTime && !is_completed[i] && processes[i].priority < min_priority) {
+                
+                min_priority = processes[i].priority;
+                min_priority_index = i;
+            }
+        }
+
+        if (min_priority_index == -1) {
+            currentTime++;
+            continue;
+        }
+
+        // Process the selected task to completion
+        currentTime += processes[min_priority_index].burst_time;
+        processes[min_priority_index].finish_time = currentTime;
+        processes[min_priority_index].turnaround_time = currentTime - processes[min_priority_index].arrival_time;
+        processes[min_priority_index].waiting_time = processes[min_priority_index].turnaround_time - processes[min_priority_index].burst_time;
+
+        is_completed[min_priority_index] = 1;
+        completed++;
+    }
+}
+
+
+
+void print_results(Process processes[], int n) {
+
+    printf("\nPID\tArrival\tBurst\tPriority\tFinish\tTurnaround\tWaiting\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t\t%d\t%d\t\t%d\n", 
+               processes[i].pid, 
+               processes[i].arrival_time, 
+               processes[i].burst_time, 
+               processes[i].priority, 
+               processes[i].finish_time, 
+               processes[i].turnaround_time, 
+               processes[i].waiting_time);
+    }
+}
+
+
+
+
+
+int main() {
+    int n, mode;
+    Process processes[MAX_PROCESSES];
+
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    for (int i = 0; i < n; i++) {
+        processes[i].pid = i + 1;
+        printf("Enter arrival time, burst time, and priority for process %d: ", processes[i].pid);
+        scanf("%d %d %d", &processes[i].arrival_time, &processes[i].burst_time, &processes[i].priority);
+        processes[i].remaining_time = processes[i].burst_time; // Initialize remaining time
+    }
+
+    printf("Select Mode: 1 for Preemptive, 2 for Non-Preemptive: ");
+    scanf("%d", &mode);
+
+    if (mode == 1) {
+        preemptive_priority_scheduling(processes, n);
+        printf("\nPreemptive Priority Scheduling Results:\n");
+    } else {
+        non_preemptive_priority_scheduling(processes, n);
+        printf("\nNon-Preemptive Priority Scheduling Results:\n");
+    }
+
+    print_results(processes, n);
+
+    return 0;
+}
+
+12)  	Write a program to compute the finish time, turnaround time and waiting time for the
+ Round robin 
+
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+int pid; // Process ID
+int bt; // Burst Time
+int at; // Arrival Time
+int ct; // Completion Time
+int wt; // Waiting Time
+int tat; // Turnaround Time
+int rem_bt; // Remaining Burst Time (for Round Robin)
+} Process;
+
+void round_robin(Process p[], int n, int quantum) {
+int time = 0;
+int remaining = n;
+int i = 0;
+
+// Round Robin Scheduling
+while (remaining > 0) {
+if (p[i].rem_bt > 0) {
+if (p[i].rem_bt <= quantum) {
+time += p[i].rem_bt;
+p[i].rem_bt = 0;
+p[i].ct = time;
+p[i].tat = p[i].ct - p[i].at;
+p[i].wt = p[i].tat - p[i].bt;
+remaining--;
+} else {
+p[i].rem_bt -= quantum;
+time += quantum;
+}
+}
+i = (i + 1) % n; // Circular queue
+}
+
+// Print results
+printf("\nPID\tArrival Time\tBurst Time\tCompletion Time\tTurnaround Time\tWaiting Time\n");
+for (int i = 0; i < n; i++) {
+printf("%d\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].ct, p[i].tat, p[i].wt);
+}
+}
+
+int main() {
+int n, quantum;
+
+// Input number of processes and quantum
+printf("Enter the number of processes: ");
+scanf("%d", &n);
+
+Process p[n];
+
+// Input process details (Arrival Time and Burst Time)
+for (int i = 0; i < n; i++) {
+p[i].pid = i + 1;
+printf("\nEnter details for process %d:\n", i + 1);
+printf("Arrival Time: ");
+scanf("%d", &p[i].at);
+printf("Burst Time: ");
+scanf("%d", &p[i].bt);
+p[i].rem_bt = p[i].bt; // Initialize remaining burst time
+}
+
+// Input the time quantum
+printf("Enter the time quantum: ");
+scanf("%d", &quantum);
+
+// Perform Round Robin scheduling
+round_robin(p, n, quantum);
+
+return 0;
+}
+
+
+13)   Bankers algorithm
+#include <stdio.h>
+#include <stdbool.h>
+
+#define MAX_PROCESSES 10
+#define MAX_RESOURCES 10
+
+int n, m; 
+
+void calculate_need(int need[MAX_PROCESSES][MAX_RESOURCES], int max[MAX_PROCESSES][MAX_RESOURCES], int allocation[MAX_PROCESSES][MAX_RESOURCES]) {
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
+            need[i][j] = max[i][j] - allocation[i][j];
+}
+
+bool is_safe(int processes[], int available[], int max[][MAX_RESOURCES], int allocation[][MAX_RESOURCES]) {
+    int need[MAX_PROCESSES][MAX_RESOURCES];
+    calculate_need(need, max, allocation);
+
+    bool finish[MAX_PROCESSES] = {0}; // Track if each process can finish
+    int safe_sequence[MAX_PROCESSES]; // Store the safe sequence
+    int work[MAX_RESOURCES];
+
+    // Initialize work with available resources
+    for (int i = 0; i < m; i++)
+        work[i] = available[i];
+
+    int count = 0; // Number of processes that can complete
+
+    while (count < n) {
+        bool found = false;
+
+        for (int p = 0; p < n; p++) {
+            if (!finish[p]) { // Check if this process is not yet finished
+                int j;
+                for (j = 0; j < m; j++)
+                    if (need[p][j] > work[j])
+                        break;
+
+                // If all resources for process p can be allocated
+                if (j == m) {
+                    for (int k = 0; k < m; k++)
+                        work[k] += allocation[p][k];
+
+                    safe_sequence[count++] = p;
+                    finish[p] = true;
+                    found = true;
+                }
+            }
+        }
+
+        // If no process can be completed, return unsafe state
+        if (!found) {
+            printf("System is not in a safe state.\n");
+            return false;
+        }
+    }
+
+    // If all processes can complete, return safe state
+    printf("System is in a safe state.\nSafe sequence: ");
+    for (int i = 0; i < n; i++)
+        printf("P%d ", safe_sequence[i]);
+    printf("\n");
+
+    return true;
+}
+
+int main() {
+    int processes[MAX_PROCESSES], available[MAX_RESOURCES];
+    int max[MAX_PROCESSES][MAX_RESOURCES], allocation[MAX_PROCESSES][MAX_RESOURCES];
+
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+    printf("Enter the number of resources: ");
+    scanf("%d", &m);
+
+    for (int i = 0; i < n; i++)
+        processes[i] = i;
+
+    printf("Enter the available resources for each type: ");
+    for (int i = 0; i < m; i++)
+        scanf("%d", &available[i]);
+
+    printf("Enter the maximum demand of each process:\n");
+    for (int i = 0; i < n; i++) {
+        printf("For process P%d: ", i);
+        for (int j = 0; j < m; j++)
+            scanf("%d", &max[i][j]);
+    }
+
+    printf("Enter the allocated resources for each process:\n");
+    for (int i = 0; i < n; i++) {
+        printf("For process P%d: ", i);
+        for (int j = 0; j < m; j++)
+            scanf("%d", &allocation[i][j]);
+    }
+
+    is_safe(processes, available, max, allocation);
+
+    return 0;
+}
+
+18)  fcfs disk scheduling
+#include <stdio.h>
+#include <stdlib.h>
+
+void print_table(int requests[], int n, int head, int seek_time) {
+printf("\nDisk Scheduling - FCFS\n");
+printf("------------------------------------------------\n");
+printf("| Request Order | Position | Seek Time (Head -> Request) |\n");
+printf("------------------------------------------------\n");
+
+int current_position = head;
+for (int i = 0; i < n; i++) {
+int seek_distance = abs(requests[i] - current_position);
+printf("| %2d | %3d | %3d ms |\n", i+1, requests[i], seek_distance);
+current_position = requests[i];
+}
+printf("------------------------------------------------\n");
+printf("| Total Seek Time: %d ms |\n", seek_time);
+printf("------------------------------------------------\n");
+}
+
+int fcfs_disk_scheduling(int requests[], int n, int head) {
+int total_seek_time = 0;
+int current_position = head;
+
+for (int i = 0; i < n; i++) {
+total_seek_time += abs(requests[i] - current_position);
+current_position = requests[i];
+}
+
+return total_seek_time;
+}
+
+int main() {
+int n, head;
+
+// Input: Number of disk requests
+printf("Enter the number of disk requests: ");
+scanf("%d", &n);
+
+int requests[n];
+
+// Input: Disk request sequence
+printf("Enter the disk requests (in sequence): ");
+for (int i = 0; i < n; i++) {
+scanf("%d", &requests[i]);
+}
+
+// Input: Initial head position
+printf("Enter the initial head position: ");
+scanf("%d", &head);
+
+// Calculate total seek time using FCFS
+int seek_time = fcfs_disk_scheduling(requests, n, head);
+
+// Display the input and output in a tabular format
+print_table(requests, n, head, seek_time);
+
+return 0;
+}
+7
+82 170 43 140 24 16 190
+50
+
+Ans 642
+
+19)  sstf disk algorithm
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h> // Include limits.h for INT_MAX
+
+void print_table(int requests[], int n, int head, int total_seek_time, int seek_sequence[]) {
+printf("\nDisk Scheduling - SSTF\n");
+printf("------------------------------------------------\n");
+printf("| Request Order | Position | Seek Time (Head -> Request) |\n");
+printf("------------------------------------------------\n");
+
+int current_position = head;
+for (int i = 0; i < n; i++) {
+int seek_distance = abs(seek_sequence[i] - current_position);
+printf("| %2d | %3d | %3d ms |\n", i + 1, seek_sequence[i], seek_distance);
+current_position = seek_sequence[i];
+}
+printf("------------------------------------------------\n");
+printf("| Total Seek Time: %d ms |\n", total_seek_time);
+printf("------------------------------------------------\n");
+}
+
+int find_closest_request(int requests[], int n, int head, int processed[]) {
+int min_distance = INT_MAX; // Use INT_MAX instead of _INT_MAX_
+int closest_index = -1;
+
+for (int i = 0; i < n; i++) {
+if (!processed[i]) { // If request has not been processed
+int distance = abs(requests[i] - head);
+if (distance < min_distance) {
+min_distance = distance;
+closest_index = i;
+}
+}
+}
+return closest_index;
+}
+
+int sstf_disk_scheduling(int requests[], int n, int head, int seek_sequence[]) {
+int total_seek_time = 0;
+int processed[n];
+for (int i = 0; i < n; i++) {
+processed[i] = 0; // Initialize all requests as unprocessed
+}
+
+for (int i = 0; i < n; i++) {
+int closest_index = find_closest_request(requests, n, head, processed);
+if (closest_index == -1) break;
+
+processed[closest_index] = 1;
+seek_sequence[i] = requests[closest_index];
+total_seek_time += abs(head - requests[closest_index]);
+head = requests[closest_index];
+}
+
+return total_seek_time;
+}
+
+int main() {
+int n, head;
+
+// Input: Number of disk requests
+printf("Enter the number of disk requests: ");
+scanf("%d", &n);
+
+int requests[n];
+int seek_sequence[n];
+
+// Input: Disk request sequence
+printf("Enter the disk requests (in sequence): ");
+for (int i = 0; i < n; i++) {
+scanf("%d", &requests[i]);
+}
+
+// Input: Initial head position
+printf("Enter the initial head position: ");
+scanf("%d", &head);
+
+// Calculate total seek time using SSTF
+int total_seek_time = sstf_disk_scheduling(requests, n, head, seek_sequence);
+
+// Display the input and output in a tabular format
+print_table(requests, n, head, total_seek_time, seek_sequence);
+
+return 0;
+}
+
+
+20) 
+
